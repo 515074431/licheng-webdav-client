@@ -13,11 +13,12 @@ function getDirectoryContents(remotePath, options) {
         method: "PROPFIND",
         headers: {
             Accept: "text/plain",
-            Depth: options.deep ? "infinity" : 1
+            Depth: options.hasOwnProperty('deep') ? options.deep : 1
         },
         responseType: "text"
     };
     let response = null;
+    let filterSelf = options.hasOwnProperty('filterSelf') ? options.filterSelf : true
     prepareRequestOptions(requestOptions, options);
     return request(requestOptions)
         .then(handleResponseCode)
@@ -26,12 +27,12 @@ function getDirectoryContents(remotePath, options) {
             return res.data;
         })
         .then(parseXML)
-        .then(result => getDirectoryFiles(result, options.remotePath, remotePath, options.details))
+        .then(result => getDirectoryFiles(result, options.remotePath, remotePath, options.details, filterSelf))
         .then(files => processResponsePayload(response, files, options.details))
         .then(files => (options.glob ? processGlobFilter(files, options.glob) : files));
 }
 
-function getDirectoryFiles(result, serverBasePath, requestPath, isDetailed = false) {
+function getDirectoryFiles(result, serverBasePath, requestPath, isDetailed = false, filterSelf = true) {
     const remoteTargetPath = pathPosix.join(serverBasePath, requestPath, "/");
     const serverBase = pathPosix.join(serverBasePath, "/");
     // Extract the response items (directory contents)
@@ -41,9 +42,13 @@ function getDirectoryFiles(result, serverBasePath, requestPath, isDetailed = fal
         responseItems
             // Filter out the item pointing to the current directory (not needed)
             .filter(item => {
-                let href = getSingleValue(getValueForKey("href", item));
-                href = pathPosix.join(normalisePath(normaliseHREF(href)), "/");
-                return href !== serverBase && href !== remoteTargetPath;
+                if (filterSelf) {
+                    let href = getSingleValue(getValueForKey("href", item));
+                    href = pathPosix.join(normalisePath(normaliseHREF(href)), "/");
+                    return href !== serverBase && href !== remoteTargetPath;
+                }else {
+                    return true
+                }
             })
             // Map all items to a consistent output structure (results)
             .map(item => {

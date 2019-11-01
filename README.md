@@ -154,7 +154,13 @@ Get the contents of a remote directory. Returns an array of [item stats](#item-s
 // Get current directory contents:
 const contents = await client.getDirectoryContents("/");
 // Get all contents:
-const contents = await client.getDirectoryContents("/", { deep: true });
+const contents = await client.getDirectoryContents("/", { deep: 'infinity' });
+// Get 1 deep:
+const contents = await client.getDirectoryContents("/", { deep: 1 });
+// Get 0 deep means current dir:
+const contents = await client.getDirectoryContents("/", { deep: 0, filterSelf:false });
+
+// filterSelf:[true/false] filter current floder 
 ```
 
 Files can be globbed using the `glob` option (processed using [`minimatch`](https://github.com/isaacs/minimatch)). When using a glob pattern it is recommended to fetch `deep` contents:
